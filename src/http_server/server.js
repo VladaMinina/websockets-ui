@@ -7,8 +7,16 @@ const server = new WebSocketServer({ port: Number(PORT) });
 server.on('connection', (ws) => {
     console.log("User connected");
     ws.on('message', (message) => {
-        const request = JSON.parse(message);
+        try {const request = JSON.parse(message);
         handleRequest(ws, request, server);
+    } catch(error) {
+        console.error(error);
+        ws.send(JSON.stringify({
+            type: 'error',
+            data: { message: 'Invalid message format.' },
+            id: 0
+        }));
+    }
     });
     ws.on('close', () => {
         console.log("Bye player. (DISCONNECTED)");

@@ -50,11 +50,15 @@ function handleRegistration(ws, request, server) {
         const id = uid();
         players.set(name, { id, username: name, password, wins: 0 });
         wsToPlayer.set(ws, id);
+        wsToPlayer.forEach((value, key) => {
+            console.log(`WebSocket Key Summary: [Ready State: ${key.readyState}], Player ID: ${value}`);
+        });
         ws.send(JSON.stringify({
             type: 'reg',
             data: { name, index: id, error: false, errorText: '' },
             id: 0
         }));
+        return;
     }
     // Send updated room list to all players
     const updateRoomData = Array.from(rooms.values())
@@ -79,7 +83,10 @@ function handleRegistration(ws, request, server) {
     }));
 }
 function handleCreateRoom(ws, request, server) {
+    
+    console.log(ws.readyState);
     const playerId = wsToPlayer.get(ws);
+    console.log(playerId);
     if (!playerId) {
         console.error(`Player ID not found.`);
         ws.send(JSON.stringify({
@@ -202,7 +209,7 @@ function handleAddShips(ws, request) {
     game.players[indexPlayer] = { ...game.players[indexPlayer], ships };
     const allPlayersHaveShips = Object.values(game.players).every((player) => player.ships && player.ships.length > 0);
     if (allPlayersHaveShips) {
-        for (const [socket, playerId] of wsToPlayer.entries()) {
+        for (const [socket, playerId] of Array.from(wsToPlayer.entries())) {
             if (game.players[playerId]) {
                 const startGameResponse = JSON.stringify({
                     type: 'start_game',

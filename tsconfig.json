@@ -1,10 +1,11 @@
 {
   "compilerOptions": {
-    "target": "ES6",
-    "module": "CommonJS",
+    "target": "ES2015",      // You can also use ESNext or ES2020
+    "module": "ESNext",      // Set this to ESNext for ES modules
     "strict": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "skipLibCheck": true      // Optional, but can speed up compilation
   },
-  "include": ["src/**/*.ts"],
+  "include": ["ts-implementation/**/*.ts"],
   "exclude": ["node_modules"]
 }

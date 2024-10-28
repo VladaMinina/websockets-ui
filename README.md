@@ -1,3 +1,11 @@
+clone repo:https://github.com/VladaMinina/websockets-ui
+
+to run app use
+1. npm run start:dev
+2. npm run start
+
+
+
 # RSSchool NodeJS websocket task template
 > Static http server and base task packages. 
 > By default WebSocket client tries to connect to the 3000 port.

@@ -1,23 +1,32 @@
 import { WebSocketServer, WebSocket as WsWebSocket } from 'ws';
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 import { handleRequest } from './game/handleGameLogic';
 
 dotenv.config();
 const PORT = process.env.PORT || 8081;
 
-const server = new WebSocketServer({port: Number(PORT)})
+const server = new WebSocketServer({ port: Number(PORT) })
 
-server.on('connection', (ws:WsWebSocket) => {
+server.on('connection', (ws: WsWebSocket) => {
     console.log("User connected");
 
     ws.on('message', (message: string) => {
-        const request = JSON.parse(message);
-        console.log('message received');
-        handleRequest(ws, request, server);
+        try {
+            const request = JSON.parse(message);
+            console.log('message received');
+            handleRequest(ws, request, server);
+        } catch (error) {
+            console.error(error);
+            ws.send(JSON.stringify({
+                type: 'error',
+                data: { message: 'Invalid message format.' },
+                id: 0
+            }));
+        }
     });
 
     ws.on('close', () => {
-        console.log("Bye player. (DISCONNECTED)");
+        console.log("Bye players. (DISCONNECTED)");
     })
 })
 
@@ -31,12 +40,12 @@ function shutdown() {
     })
 
     server.close((err) => {
-        if(err) {
+        if (err) {
             console.error('Error closing server');
         } else {
             console.log('Server closed successfully');
         }
-    }) 
+    })
 }
 
 process.on('SIGINT', shutdown);

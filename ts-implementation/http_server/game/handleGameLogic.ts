@@ -2,7 +2,7 @@ import { WebSocketServer, WebSocket as WsWebSocket } from 'ws';
 import { players, rooms, games, wsToPlayer, Coordinate, Ship } from '../db'
 import { v4 as uid } from 'uuid';
 
-const handleRequest = (ws: WsWebSocket, request: any, server: WebSocketServer) => {
+export const handleRequest = (ws: WsWebSocket, request: any, server: WebSocketServer) => {
     console.log('handle');
     switch (request.type) {
         case 'reg':
@@ -28,35 +28,22 @@ const handleRequest = (ws: WsWebSocket, request: any, server: WebSocketServer) =
 
 function handleRegistration(ws: WsWebSocket, request: any, server: WebSocketServer) {
     const { name, password } = request.data;
-    if (players.has(name)) {
-        const player = players.get(name);
-        if (player && player.password === password) {
-            // Send successful login response
-            ws.send(JSON.stringify({
-                type: 'reg',
-                data: { name, index: player.id, error: false, errorText: '' },
-                id: 0
-            }));
-        } else {
-            // Invalid credentials
-            ws.send(JSON.stringify({
-                type: 'reg',
-                data: { name, index: '', error: true, errorText: 'Invalid credentials' },
-                id: 0
-            }));
-            return;
-        }
-    } else {
-        // Register new player
-        const id = uid();
-        players.set(name, { id, username: name, password, wins: 0 });
-        wsToPlayer.set(ws, id);
-        ws.send(JSON.stringify({
-            type: 'reg',
-            data: { name, index: id, error: false, errorText: '' },
-            id: 0
-        }));
-    }
+    // Register new player
+    const id = uid();
+    players.set(id, { id, username: name, password, wins: 0 });
+    wsToPlayer.set(ws, id);
+    players.forEach((player, username) => {
+        console.log(`Username: ${username}, Player ID: ${player.id}, Wins: ${player.wins}`);
+    });
+    wsToPlayer.forEach((id, ws) => {
+        console.log(`ID: ${id}, WS: ${ws.readyState},`);
+    });
+    ws.send(JSON.stringify({
+        type: 'reg',
+        data: { name, index: id, error: false, errorText: '' },
+        id: 0
+    }));
+
     // Send updated room list to all players
     const updateRoomData = Array.from(rooms.values())
         .filter(room => room.players.length === 1)
@@ -87,6 +74,7 @@ function handleRegistration(ws: WsWebSocket, request: any, server: WebSocketServ
 
 function handleCreateRoom(ws: WsWebSocket, request: any, server: WebSocketServer) {
     const playerId = wsToPlayer.get(ws);
+    console.log("RETHRIEVEDID", playerId);
 
     if (!playerId) {
         console.error(`Player ID not found.`);
@@ -229,7 +217,7 @@ function handleAddShips(ws: WsWebSocket, request: any) {
     const allPlayersHaveShips = Object.values(game.players).every((player) => player.ships && player.ships.length > 0);
 
     if (allPlayersHaveShips) {
-        for (const [socket, playerId] of wsToPlayer.entries()) {
+        for (const [socket, playerId] of Array.from(wsToPlayer.entries())) {
             if (game.players[playerId]) {
                 const startGameResponse = JSON.stringify({
                     type: 'start_game',
@@ -316,7 +304,7 @@ function handleAttack(ws: WsWebSocket, request: any) {
 
     if (hit) {
         const allSunk = areAllShipsSunk(opponentData.ships, playerData.shots);
-        
+
         if (allSunk) {
             const finishGameMessage = {
                 type: "finish",
@@ -330,7 +318,7 @@ function handleAttack(ws: WsWebSocket, request: any) {
             const player = players.get(indexPlayer);
             if (player) {
                 player.wins = (player.wins ?? 0) + 1;
-        
+
                 const updateWinnersMessage = {
                     type: "update_winners",
                     data: {
@@ -353,7 +341,7 @@ function handleAttack(ws: WsWebSocket, request: any) {
         id: 0,
     };
     ws.send(JSON.stringify(turnNotification));
-    
+
 }
 
 function getShipPositions(ship: Ship): Coordinate[] {
@@ -374,6 +362,3 @@ function areAllShipsSunk(ships: Ship[], shots: Coordinate[]): boolean {
         return positions.every(pos => shots.some(shot => shot.x === pos.x && shot.y === pos.y));
     });
 }
-
-
-export { handleRequest };
